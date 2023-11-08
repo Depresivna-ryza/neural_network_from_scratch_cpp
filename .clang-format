@@ -1,0 +1,3 @@
+BasedOnStyle: Google  # Use Google's style as a base
+IndentWidth: 4       # Set the indentation width to 4 spaces
+ColumnLimit: 100     # Set the maximum line length to 100 characters
