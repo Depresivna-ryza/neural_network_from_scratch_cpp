@@ -1,15 +1,8 @@
 #include <iostream>
-#include "misc.h"
-#include "neuralnetwork.h"
-#include "tensor.h"
-
-void test()
-{
-    DEBUG("Hello, World!");
-    
-}
+#include "misc.hpp"
+#include "neuralnetwork.hpp"
+#include "tensor.hpp"
 
 int main() {
-    test();
     return 0;
 }

@@ -9,15 +9,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # add_subdirectory(src)
 
-add_executable(neural_network src/main.cpp src/misc.cpp src/neuralnetwork.cpp src/tensor.cpp)
+add_executable(neural_network src/main.cpp src/misc.hpp src/neuralnetwork.hpp src/tensor.hpp)
 
 # target_link_libraries(neural_network <library_name>)
 
 # set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
 # target_include_directories(neural_network PRIVATE src)
-
-
 
 ### TESTING ###
 
@@ -33,5 +31,5 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(tests src/tests.cpp src/misc.cpp src/neuralnetwork.cpp src/tensor.cpp)
+add_executable(tests src/tests.cpp src/misc.hpp src/neuralnetwork.hpp src/tensor.hpp)
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
