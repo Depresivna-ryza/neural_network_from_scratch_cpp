@@ -4,29 +4,30 @@
 #include <cassert>
 #include <vector>
 
-#include "misc.hpp"
+#include "miscellaneous.hpp"
 
 using namespace std;
 
-class NeuralNetwork
-{
+struct NeuralNetwork {
     vector<size_t> topology;
     vector<vector<double>> weights;
     vector<vector<double>> biases;
 
     vector<vector<double>> neuron_values;
+    vector<vector<double>> neuron_potentials;
     vector<vector<double>> neuron_gradients;
+    vector<vector<double>> weight_gradients;
 
    public:
     NeuralNetwork(vector<size_t> t) : topology{t} {
         // randomly initialize weights and biases
-        for (size_t i = 0; i < topology.size() - 1; i++) {
+        for (size_t layer = 0; layer < topology.size() - 1; layer++) {
             vector<double> layer_weights;
             vector<double> layer_biases;
-            for (size_t j = 0; j < topology[i] * topology[i + 1]; j++) {
+            for (size_t j = 0; j < topology[layer] * topology[layer + 1]; j++) {
                 layer_weights.push_back(random_gaussian());
             }
-            for (size_t j = 0; j < topology[i + 1]; j++) {
+            for (size_t j = 0; j < topology[layer + 1]; j++) {
                 layer_biases.push_back(random_gaussian());
             }
             weights.push_back(layer_weights);
@@ -34,21 +35,39 @@ class NeuralNetwork
         }
 
         // initialize neuron values
-        for (size_t i = 0; i < topology.size(); i++) {
+        for (size_t layer = 0; layer < topology.size(); layer++) {
             vector<double> layer_values;
-            for (size_t j = 0; j < topology[i]; j++) {
+            for (size_t j = 0; j < topology[layer]; j++) {
                 layer_values.push_back(0);
             }
             neuron_values.push_back(layer_values);
         }
 
+        // initialize neuron potentials
+        for (size_t layer = 0; layer < topology.size(); layer++) {
+            vector<double> layer_potentials;
+            for (size_t j = 0; j < topology[layer]; j++) {
+                layer_potentials.push_back(0);
+            }
+            neuron_potentials.push_back(layer_potentials);
+        }
+
         // initialize neuron gradients
-        for (size_t i = 0; i < topology.size(); i++) {
+        for (size_t layer = 0; layer < topology.size(); layer++) {
             vector<double> layer_gradients;
-            for (size_t j = 0; j < topology[i]; j++) {
+            for (size_t j = 0; j < topology[layer]; j++) {
                 layer_gradients.push_back(0);
             }
             neuron_gradients.push_back(layer_gradients);
+        }
+
+        // initialize weight gradients
+        for (size_t layer = 0; layer < topology.size() - 1; layer++) {
+            vector<double> layer_gradients;
+            for (size_t j = 0; j < topology[layer] * topology[layer + 1]; j++) {
+                layer_gradients.push_back(0);
+            }
+            weight_gradients.push_back(layer_gradients);
         }
     }
 
@@ -82,18 +101,16 @@ class NeuralNetwork
                     sum += neuron_values[layer - 1][j] * weights[layer - 1][j * topology[layer] + i];
                 }
                 sum += biases[layer - 1][i];
-
-                // Apply ReLU for hidden layers and softmax for the output layer
-                if (layer == topology.size() - 1) {  // Check if it's the last hidden layer
-                    neuron_values[layer][i] = sum;   // Output before softmax
-                } else {
-                    neuron_values[layer][i] = relu(sum);  // ReLU for hidden layers
-                }
+                neuron_potentials[layer][i] = sum;
             }
 
-            // Apply softmax at the output layer
+            // Apply softmax at the output layer or ReLU at the hidden layers
             if (layer == topology.size() - 1) {
                 neuron_values[layer] = softmax(neuron_values[layer]);
+            } else {
+                for (size_t i = 0; i < topology[layer]; ++i) {
+                    neuron_values[layer][i] = relu(neuron_potentials[layer][i]);
+                }
             }
         }
     }
@@ -112,10 +129,92 @@ class NeuralNetwork
                 double gradient_sum = 0;
                 for (size_t j = 0; j < topology[layer + 1]; ++j) {
                     gradient_sum += neuron_gradients[layer + 1][j] * weights[layer][i * topology[layer + 1] + j] *
-                                    relu_derivative(neuron_values[layer + 1][j]);
+                                    relu_derivative(neuron_potentials[layer + 1][j]);
                 }
                 neuron_gradients[layer][i] = gradient_sum;
             }
+        }
+    }
+
+    void update_weight_gradients() {
+        // Iterate over all layers except the input layer
+        for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
+            for (size_t i = 0; i < topology[layer]; ++i) {          // Iterate over neurons in the current layer
+                for (size_t j = 0; j < topology[layer + 1]; ++j) {  // Iterate over neurons in the next layer
+                    double gradient;
+                    if (layer == topology.size() - 2) {
+                        // For the last hidden layer, use the neuron_gradients as is
+                        gradient = neuron_gradients[layer + 1][j];
+                    } else {
+                        // For other layers, multiply by the derivative of the ReLU function
+                        gradient = neuron_gradients[layer + 1][j] * relu_derivative(neuron_potentials[layer + 1][j]);
+                    }
+
+                    // Multiply by the output of the neuron in the current layer
+                    gradient *= neuron_values[layer][i];
+
+                    // Update the weight gradient
+                    weight_gradients[layer][i * topology[layer + 1] + j] += gradient;
+                }
+            }
+        }
+    }
+
+    void reset_weight_gradients() {
+        for (auto& layer_gradients : weight_gradients) {
+            fill(layer_gradients.begin(), layer_gradients.end(), 0.0);
+        }
+    }
+
+    void epoch(const vector<vector<double>>& inputs, const vector<vector<double>>& targets, double learning_rate) {
+        assert(inputs.size() == targets.size());
+
+        double total_error = 0;
+
+        // Reset weight gradients to zero at the start of each epoch
+        reset_weight_gradients();
+
+        // Iterate over each input-target pair
+        for (size_t i = 0; i < inputs.size(); ++i) {
+            feed_forward(inputs[i]);
+            back_propagate(targets[i]);
+            update_weight_gradients();
+            total_error += cross_entropy_loss(targets[i]);
+        }
+
+        // Update weights after accumulating gradients from all input-target pairs
+        update_weights(learning_rate);
+
+        cout << "Average error for this epoch: " << total_error / inputs.size() << endl;
+    }
+
+    double cross_entropy_loss(const vector<double>& target) {
+        assert(target.size() == neuron_values.back().size());
+        double loss = 0;
+        for (size_t i = 0; i < target.size(); ++i) {
+            // Ensure the predicted value is not exactly 0 to avoid log(0)
+            double predicted = max(neuron_values.back()[i], numeric_limits<double>::min());
+            loss -= target[i] * log(predicted);
+        }
+        return loss / target.size();
+    }
+
+    void update_weights(double learning_rate) {
+        for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
+            for (size_t i = 0; i < topology[layer]; ++i) {
+                for (size_t j = 0; j < topology[layer + 1]; ++j) {
+                    // Update each weight by subtracting the learning rate multiplied by the accumulated gradient
+                    weights[layer][i * topology[layer + 1] + j] -=
+                        learning_rate * weight_gradients[layer][i * topology[layer + 1] + j];
+                }
+            }
+        }
+    }
+
+    void train(const vector<vector<double>>& inputs, const vector<vector<double>>& targets, double learning_rate,
+               size_t epochs) {
+        for (size_t i = 0; i < epochs; ++i) {
+            epoch(inputs, targets, learning_rate);
         }
     }
 };
