@@ -101,6 +101,18 @@ void vector_to_file(const vector<double>& vec, const string& filename) {
     }
 }
 
+void vector_to_file(const vector<vector<double>>& vec, const string& filename) {
+    ofstream file(filename);
+    assert(file.is_open());
+
+    for (auto& row : vec) {
+        for (auto& value : row) {
+            file << value << ",";
+        }
+        file << "\n";
+    }
+}
+
 void normalize_data(vector<vector<double>>& data, double min, double max) {
     for (size_t i = 0; i < data.size(); ++i) {
         for (size_t j = 0; j < data[i].size(); ++j) {
@@ -109,4 +121,15 @@ void normalize_data(vector<vector<double>>& data, double min, double max) {
     }
 }
 
+size_t argmax(const vector<double>& vec) {
+    double max = vec[0];
+    size_t max_index = 0;
+    for (size_t i = 1; i < vec.size(); ++i) {
+        if (vec[i] > max) {
+            max = vec[i];
+            max_index = i;
+        }
+    }
+    return max_index;
+}
 #endif // MISC_H

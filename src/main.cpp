@@ -15,6 +15,9 @@ int main() {
     auto train_vectors = read_csv("../../data/fashion_mnist_train_vectors.csv");
     auto train_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_train_labels.csv"));
 
+    auto test_vectors = read_csv("../../data/fashion_mnist_test_vectors.csv");
+    auto test_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_test_labels.csv"));
+
     normalize_data(train_vectors, 0, 255);
 
     // vector<vector<double>> train_vectors = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
@@ -24,13 +27,13 @@ int main() {
     size_t input_size = train_vectors[0].size();
     size_t output_size = train_labels[0].size();
 
-    vector<size_t> topology = {input_size, 5, output_size};  // Example topology
+    vector<size_t> topology = {input_size, 3, output_size};  // Example topology
     NeuralNetwork nn(topology);
 
     // Train the network
-    int epochs = 10;            // Number of epochs
-    size_t batch_size = 10000;  // Batch size
-    double learning_rate = 0.0001;   // Learning rate
+    int epochs = 100;             // Number of epochs
+    size_t batch_size = 128;      // Batch size
+    double learning_rate = 0.01;  // Learning rate
 
     // Random engine for shuffling
     random_device rd;
@@ -58,8 +61,23 @@ int main() {
             // Run training epoch on the current batch
             nn.epoch(batch_vectors, batch_labels, learning_rate);
             string out_file = "output" + to_string(epoch) + ".txt";
-            vector_to_file(nn.neuron_potentials.back(), out_file);
+            vector_to_file(nn.neuron_values.back(), out_file);
         }
+
+        // test the network on the test set
+        vector<vector<double>> predictions;
+        double correct = 0;
+        for (size_t i = 0; i < test_vectors.size(); ++i) {
+            auto pred = nn.predict(test_vectors[i]);
+            predictions.push_back(pred);
+            if (argmax(pred) == argmax(test_labels[i])) {
+                ++correct;
+            }
+        }
+        cout << "Accuracy: " << correct / test_vectors.size() << endl;
+
+        string out_file = "prediction" + to_string(epoch) + ".txt";
+        vector_to_file(predictions, out_file);
     }
 
     cout << "Training complete." << endl;

@@ -106,7 +106,7 @@ struct NeuralNetwork {
 
             // Apply softmax at the output layer or ReLU at the hidden layers
             if (layer == topology.size() - 1) {
-                neuron_values[layer] = softmax(neuron_values[layer]);
+                neuron_values[layer] = softmax(neuron_potentials[layer]);
             } else {
                 for (size_t i = 0; i < topology[layer]; ++i) {
                     neuron_values[layer][i] = relu(neuron_potentials[layer][i]);
@@ -211,11 +211,9 @@ struct NeuralNetwork {
         }
     }
 
-    void train(const vector<vector<double>>& inputs, const vector<vector<double>>& targets, double learning_rate,
-               size_t epochs) {
-        for (size_t i = 0; i < epochs; ++i) {
-            epoch(inputs, targets, learning_rate);
-        }
+    vector<double> predict(const vector<double>& input) {
+        feed_forward(input);
+        return neuron_values.back();
     }
 };
 
