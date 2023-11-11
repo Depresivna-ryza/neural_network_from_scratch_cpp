@@ -50,22 +50,6 @@ double normal_he(double n) {
 
 }
 
-vector<size_t> shuffle_indices(size_t n) {
-    vector<size_t> indices(n);
-    iota(indices.begin(), indices.end(), 0);
-    random_shuffle(indices.begin(), indices.end());
-    return indices;
-}
-
-template <typename T>
-vector<T> shuffle_data(const vector<T>& data, const vector<size_t>& indices) {
-    vector<T> shuffled(data.size());
-    for (size_t i = 0; i < data.size(); ++i) {
-        shuffled[i] = data[indices[i]];
-    }
-    return shuffled;
-}
-
 vector<double> parse_csv_line(const string& line) {
     vector<double> result;
     stringstream lineStream(line);
@@ -145,4 +129,46 @@ size_t argmax(const vector<double>& vec) {
     }
     return max_index;
 }
+
+std::tuple<vector<vector<double>>, vector<vector<double>>> create_xor(int dimension) {
+    vector<vector<double>> train_vectors;
+    vector<vector<double>> train_labels;
+    for (int i = 0; i < std::pow(2, dimension); ++i) {
+        vector<int> vec(dimension, 0);
+        for (int j = 0; j < dimension; ++j) {
+            vec[j] = (i >> j) & 1;
+        }
+        train_vectors.push_back(vector<double>(vec.begin(), vec.end()));
+        train_labels.push_back({static_cast<double>(std::accumulate(vec.begin(), vec.end(), 0) % 2)});
+    }
+    return {train_vectors, train_labels};
+}
+
+auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<double>>& output_data,
+                             double train_ratio) {
+    assert(input_data.size() == output_data.size());
+    //shuffle the data
+    vector<size_t> indices(input_data.size());
+    iota(indices.begin(), indices.end(), 0);
+    shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device()()));
+
+    size_t train_size = static_cast<size_t>(input_data.size() * train_ratio);
+    vector<vector<double>> train_vectors;
+    vector<vector<double>> train_labels;
+    vector<vector<double>> test_vectors;
+    vector<vector<double>> test_labels;
+
+    for (size_t i = 0; i < train_size; ++i) {
+        train_vectors.push_back(input_data[indices[i]]);
+        train_labels.push_back(output_data[indices[i]]);
+    }
+
+    for (size_t i = train_size; i < input_data.size(); ++i) {
+        test_vectors.push_back(input_data[indices[i]]);
+        test_labels.push_back(output_data[indices[i]]);
+    }
+
+    return std::make_tuple(train_vectors, train_labels, test_vectors, test_labels);
+}
+
 #endif // MISC_H

@@ -15,29 +15,30 @@ int main() {
     auto train_vectors = read_csv("../../data/fashion_mnist_train_vectors.csv");
     auto train_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_train_labels.csv"));
 
-    train_vectors.resize(100);
-    train_labels.resize(100);
+    // train_vectors.resize(100);
+    // train_labels.resize(100);
 
     normalize_data(train_vectors, 0, 255);
 
-    // auto test_vectors = read_csv("../../data/fashion_mnist_test_vectors.csv");
-    // auto test_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_test_labels.csv"));
+    auto test_vectors = read_csv("../../data/fashion_mnist_test_vectors.csv");
+    auto test_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_test_labels.csv"));
 
-    // vector<vector<double>> train_vectors = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-    // vector<vector<double>> train_labels = {{0}, {1}, {1}, {0}};
+    // XOR data
+    // auto [input_vector, output_labels] = create_xor(7);
+
+    // auto[train_vectors, train_labels, test_vectors, test_labels] = split_to_train_and_test(input_vector, output_labels, 1);
 
     // Create the neural network
     size_t input_size = train_vectors[0].size();
     size_t output_size = train_labels[0].size();
 
-
-    vector<size_t> topology = {input_size, 100, 10, output_size};
+    vector<size_t> topology = {input_size, 20, 20, output_size};
     NeuralNetwork nn(topology);
 
     // Train the network
-    int epochs = 10;              // Number of epochs
-    size_t batch_size = 100;      // Batch size
-    double learning_rate = 0.0;  // Learning rate
+    int epochs = 100;              // Number of epochs
+    size_t batch_size = 1000;      // Batch size
+    double learning_rate = 0.001;  // Learning rate
 
     // Random engine for shuffling
     random_device rd;
@@ -86,9 +87,27 @@ int main() {
         if (epoch < 5 || epoch > epochs - 6) {
             vector_to_file(predictions, out_file);
         }
+
+        string out_file_real_data = "real_data" + to_string(epoch) + ".txt";
+        if (epoch < 5 || epoch > epochs - 6) {
+            vector_to_file(train_labels, out_file_real_data);
+        }
     }
 
     cout << "Training complete." << endl;
+
+
+    // Test the network
+    size_t correct = 0;
+    for (size_t i = 0; i < test_vectors.size(); ++i) {
+        auto pred = argmax(nn.predict(test_vectors[i]));
+        auto label = argmax(test_labels[i]);
+        if (pred == label) {
+            ++correct;
+        }
+    }
+
+    cout << "Accuracy: " << (static_cast<double>(correct) / test_vectors.size()) * 100 << "%" << endl;
 
     return 0;
 }
