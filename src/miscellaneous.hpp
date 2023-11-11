@@ -31,10 +31,12 @@ void debug(std::string func_name, int line, std::vector<T> vec) {
 }
 
 double random_gaussian() {
-    std::normal_distribution<double> d(0, 1);
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    return d(gen);
+    // std::normal_distribution<double> d(0, 1);
+    // std::random_device rd;
+    // std::mt19937 gen(rd());
+    // return d(gen);
+    return (double)rand() / RAND_MAX / 100;
+
 }
 
 vector<size_t> shuffle_indices(size_t n) {
