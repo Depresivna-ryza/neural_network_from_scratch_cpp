@@ -36,13 +36,15 @@ int main() {
     NeuralNetwork nn(topology);
 
     // Train the network
-    int epochs = 100;              // Number of epochs
-    size_t batch_size = 1000;      // Batch size
+    int epochs = 20;               // Number of epochs
+    size_t batch_size = 100;      // Batch size
     double learning_rate = 0.001;  // Learning rate
 
     // Random engine for shuffling
     random_device rd;
     default_random_engine rng(rd());
+
+    test_network(nn, test_vectors, test_labels, train_vectors, train_labels);
 
     for (int epoch = 0; epoch < epochs; ++epoch) {
         cout << "Epoch " << (epoch + 1) << "/" << epochs << endl;
@@ -70,44 +72,11 @@ int main() {
             // vector_to_file(nn.neuron_values.back(), out_file);
         }
 
-        // test the network on the test set
-        vector<vector<double>> predictions;
-        double error = 0;
-        for (size_t i = 0; i < train_vectors.size(); ++i) {
-            auto pred = nn.predict(train_vectors[i]);
-            predictions.push_back(pred);
-            error += std::abs(pred[0] - train_labels[i][0]);
-        }
-
-        error = error / train_vectors.size();
-
-        cout << "Error: " << error << endl;
-
-        string out_file = "prediction" + to_string(epoch) + ".txt";
-        if (epoch < 5 || epoch > epochs - 6) {
-            vector_to_file(predictions, out_file);
-        }
-
-        string out_file_real_data = "real_data" + to_string(epoch) + ".txt";
-        if (epoch < 5 || epoch > epochs - 6) {
-            vector_to_file(train_labels, out_file_real_data);
-        }
+        // Test the network
+        test_network(nn, test_vectors, test_labels, train_vectors, train_labels);
     }
 
     cout << "Training complete." << endl;
-
-
-    // Test the network
-    size_t correct = 0;
-    for (size_t i = 0; i < test_vectors.size(); ++i) {
-        auto pred = argmax(nn.predict(test_vectors[i]));
-        auto label = argmax(test_labels[i]);
-        if (pred == label) {
-            ++correct;
-        }
-    }
-
-    cout << "Accuracy: " << (static_cast<double>(correct) / test_vectors.size()) * 100 << "%" << endl;
 
     return 0;
 }

@@ -171,4 +171,27 @@ auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<d
     return std::make_tuple(train_vectors, train_labels, test_vectors, test_labels);
 }
 
+void test_network(auto nn, auto test_vectors, auto test_labels, auto train_vectors, auto train_labels) {
+    auto predicted_test = nn.predict(test_vectors);
+    auto predicted_train = nn.predict(train_vectors);
+
+    size_t correct_test = 0;
+    size_t correct_train = 0;
+
+    for (size_t i = 0; i < test_vectors.size(); ++i) {
+        if (argmax(predicted_test[i]) == argmax(test_labels[i])) {
+            ++correct_test;
+        }
+    }
+
+    for (size_t i = 0; i < train_vectors.size(); ++i) {
+        if (argmax(predicted_train[i]) == argmax(train_labels[i])) {
+            ++correct_train;
+        }
+    }
+
+    cout << "Test accuracy: " << (static_cast<double>(correct_test) / test_vectors.size()) * 100 << "% ";
+    cout << "Train accuracy: " << (static_cast<double>(correct_train) / train_vectors.size()) * 100 << "%" << endl;
+}
+
 #endif // MISC_H

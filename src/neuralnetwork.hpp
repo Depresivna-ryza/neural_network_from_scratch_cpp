@@ -215,7 +215,7 @@ struct NeuralNetwork {
         update_weights(learning_rate);
         update_biases(learning_rate);
 
-        cout << "Average error for this epoch: " << total_error / inputs.size() << endl;
+        // cout << "Average error for this epoch: " << total_error / inputs.size() << endl;
     }
 
     double cross_entropy_loss(const vector<double>& target) {
@@ -263,6 +263,15 @@ struct NeuralNetwork {
     vector<double> predict(const vector<double>& input) {
         feed_forward(input);
         return neuron_values.back();
+    }
+
+    auto predict(const vector<vector<double>>& input) {
+        vector<vector<double>> predicted_labels;
+        for (size_t i = 0; i < input.size(); ++i) {
+            auto pred = predict(input[i]);
+            predicted_labels.push_back(pred);
+        }
+        return predicted_labels;
     }
 };
 
