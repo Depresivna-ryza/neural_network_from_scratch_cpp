@@ -139,7 +139,10 @@ std::tuple<vector<vector<double>>, vector<vector<double>>> create_xor(int dimens
             vec[j] = (i >> j) & 1;
         }
         train_vectors.push_back(vector<double>(vec.begin(), vec.end()));
-        train_labels.push_back({static_cast<double>(std::accumulate(vec.begin(), vec.end(), 0) % 2)});
+        auto res = std::accumulate(vec.begin(), vec.end(), 0) % 2;
+        auto res_vec = vector<double>(2, 0);
+        res_vec[res] = 1;
+        train_labels.push_back(res_vec);
     }
     return {train_vectors, train_labels};
 }
