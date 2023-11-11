@@ -25,18 +25,17 @@ int main() {
 
     // XOR data
     // auto [input_vector, output_labels] = create_xor(7);
-
     // auto[train_vectors, train_labels, test_vectors, test_labels] = split_to_train_and_test(input_vector, output_labels, 1);
 
     // Create the neural network
     size_t input_size = train_vectors[0].size();
     size_t output_size = train_labels[0].size();
 
-    vector<size_t> topology = {input_size, 20, 20, output_size};
+    vector<size_t> topology = {input_size, 20, 20, 20, output_size};
     NeuralNetwork nn(topology);
 
     // Train the network
-    int epochs = 20;               // Number of epochs
+    int epochs = 100;               // Number of epochs
     size_t batch_size = 100;      // Batch size
     double learning_rate = 0.001;  // Learning rate
 
@@ -44,7 +43,7 @@ int main() {
     random_device rd;
     default_random_engine rng(rd());
 
-    test_network(nn, test_vectors, test_labels, train_vectors, train_labels);
+    test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(0));
 
     for (int epoch = 0; epoch < epochs; ++epoch) {
         cout << "Epoch " << (epoch + 1) << "/" << epochs << endl;
@@ -73,7 +72,7 @@ int main() {
         }
 
         // Test the network
-        test_network(nn, test_vectors, test_labels, train_vectors, train_labels);
+        test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(epoch + 1));
     }
 
     cout << "Training complete." << endl;
