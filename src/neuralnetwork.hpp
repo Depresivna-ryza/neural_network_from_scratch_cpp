@@ -13,10 +13,11 @@ struct NeuralNetwork {
     vector<vector<double>> weights;
     vector<vector<double>> biases;
 
-    vector<vector<double>> neuron_values;
-    vector<vector<double>> neuron_potentials;
-    vector<vector<double>> neuron_gradients;
-    vector<vector<double>> weight_gradients;
+    vector<vector<double>> neuron_values;      // neuron outputs
+    vector<vector<double>> neuron_potentials;  // neuron potentials
+    vector<vector<double>> neuron_gradients;   // derivative of error with respect to neuron output
+    vector<vector<double>> weight_gradients;   // derivative of error with respect to weight
+    vector<vector<double>> bias_gradients;     // derivative of error with respect to bias
 
    public:
     NeuralNetwork(vector<size_t> t) : topology{t} {
@@ -25,10 +26,10 @@ struct NeuralNetwork {
             vector<double> layer_weights;
             vector<double> layer_biases;
             for (size_t j = 0; j < topology[layer] * topology[layer + 1]; j++) {
-                layer_weights.push_back(random_gaussian());
+                layer_weights.push_back(normal_he(topology[layer]));
             }
             for (size_t j = 0; j < topology[layer + 1]; j++) {
-                layer_biases.push_back(random_gaussian());
+                layer_biases.push_back(normal_he(topology[layer]));
             }
             weights.push_back(layer_weights);
             biases.push_back(layer_biases);
@@ -69,6 +70,12 @@ struct NeuralNetwork {
             }
             weight_gradients.push_back(layer_gradients);
         }
+
+        // Initialize bias gradients
+        for (size_t layer = 0; layer < topology.size() - 1; layer++) {
+            vector<double> layer_gradients(topology[layer + 1], 0.0);
+            bias_gradients.push_back(layer_gradients);
+        }
     }
 
     double relu(double x) { return x > 0 ? x : 0; }
@@ -102,14 +109,11 @@ struct NeuralNetwork {
                 }
                 sum += biases[layer - 1][i];
                 neuron_potentials[layer][i] = sum;
-            }
 
-            // Apply softmax at the output layer or ReLU at the hidden layers
-            if (layer == topology.size() - 1) {
-                neuron_values[layer] = softmax(neuron_potentials[layer]);
-            } else {
-                for (size_t i = 0; i < topology[layer]; ++i) {
-                    neuron_values[layer][i] = relu(neuron_potentials[layer][i]);
+                if (layer == topology.size() - 1)
+                    neuron_values[layer][i] = sum;  // Linear activation for the output layer
+                else {
+                    neuron_values[layer][i] = relu(sum);  // ReLU for hidden layers
                 }
             }
         }
@@ -128,8 +132,13 @@ struct NeuralNetwork {
             for (size_t i = 0; i < topology[layer]; ++i) {
                 double gradient_sum = 0;
                 for (size_t j = 0; j < topology[layer + 1]; ++j) {
-                    gradient_sum += neuron_gradients[layer + 1][j] * weights[layer][i * topology[layer + 1] + j] *
-                                    relu_derivative(neuron_potentials[layer + 1][j]);
+                    if (layer == topology.size() - 2)
+                        gradient_sum += neuron_gradients[layer + 1][j] * weights[layer][i * topology[layer + 1] + j];
+                    else {
+                        gradient_sum += neuron_gradients[layer + 1][j] *
+                                        relu_derivative(neuron_potentials[layer + 1][j]) *
+                                        weights[layer][i * topology[layer + 1] + j];
+                    }
                 }
                 neuron_gradients[layer][i] = gradient_sum;
             }
@@ -141,20 +150,33 @@ struct NeuralNetwork {
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {          // Iterate over neurons in the current layer
                 for (size_t j = 0; j < topology[layer + 1]; ++j) {  // Iterate over neurons in the next layer
-                    double gradient;
-                    if (layer == topology.size() - 2) {
-                        // For the last hidden layer, use the neuron_gradients as is
-                        gradient = neuron_gradients[layer + 1][j];
-                    } else {
-                        // For other layers, multiply by the derivative of the ReLU function
-                        gradient = neuron_gradients[layer + 1][j] * relu_derivative(neuron_potentials[layer + 1][j]);
+                    double gradient = 0;
+                    if (layer == topology.size() - 2)
+                        // For the output layer, the gradient is simply the neuron gradient multiplied by the input
+                        gradient += neuron_gradients[layer + 1][j] * neuron_values[layer][i];
+                    else {
+                        // For hidden layers, the gradient is the neuron gradient multiplied by the input and the
+                        // derivative of the activation function
+                        gradient += neuron_gradients[layer + 1][j] * relu_derivative(neuron_potentials[layer + 1][j]) *
+                                    neuron_values[layer][i];
                     }
-
-                    // Multiply by the output of the neuron in the current layer
-                    gradient *= neuron_values[layer][i];
-
                     // Update the weight gradient
                     weight_gradients[layer][i * topology[layer + 1] + j] += gradient;
+                }
+            }
+        }
+
+        // Update bias gradients
+        for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
+            for (size_t i = 0; i < topology[layer + 1]; ++i) {
+                if (layer == topology.size() - 2)
+                    // For the output layer, the gradient is simply the neuron gradient
+                    bias_gradients[layer][i] += neuron_gradients[layer + 1][i];
+                else {
+                    // For hidden layers, the gradient is the neuron gradient multiplied by the derivative of the
+                    // activation function
+                    bias_gradients[layer][i] +=
+                        neuron_gradients[layer + 1][i] * relu_derivative(neuron_potentials[layer + 1][i]);
                 }
             }
         }
@@ -166,6 +188,12 @@ struct NeuralNetwork {
         }
     }
 
+    void reset_bias_gradients() {
+        for (auto& layer_gradients : bias_gradients) {
+            fill(layer_gradients.begin(), layer_gradients.end(), 0.0);
+        }
+    }
+
     void epoch(const vector<vector<double>>& inputs, const vector<vector<double>>& targets, double learning_rate) {
         assert(inputs.size() == targets.size());
 
@@ -173,6 +201,7 @@ struct NeuralNetwork {
 
         // Reset weight gradients to zero at the start of each epoch
         reset_weight_gradients();
+        reset_bias_gradients();
 
         // Iterate over each input-target pair
         for (size_t i = 0; i < inputs.size(); ++i) {
@@ -184,6 +213,7 @@ struct NeuralNetwork {
 
         // Update weights after accumulating gradients from all input-target pairs
         update_weights(learning_rate);
+        update_biases(learning_rate);
 
         cout << "Average error for this epoch: " << total_error / inputs.size() << endl;
     }
@@ -199,6 +229,16 @@ struct NeuralNetwork {
         return loss / target.size();
     }
 
+    double mean_squared_error(const vector<double>& target) {
+        assert(target.size() == neuron_values.back().size());
+        double loss = 0;
+        for (size_t i = 0; i < target.size(); ++i) {
+            double error = neuron_values.back()[i] - target[i];
+            loss += std::pow(error, 2);
+        }
+        return loss / target.size();
+    }
+
     void update_weights(double learning_rate) {
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
@@ -207,6 +247,15 @@ struct NeuralNetwork {
                     weights[layer][i * topology[layer + 1] + j] -=
                         learning_rate * weight_gradients[layer][i * topology[layer + 1] + j];
                 }
+            }
+        }
+    }
+
+    void update_biases(double learning_rate) {
+        for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
+            for (size_t i = 0; i < topology[layer + 1]; ++i) {
+                // Update each bias by subtracting the learning rate multiplied by the accumulated gradient
+                biases[layer][i] -= learning_rate * bias_gradients[layer][i];
             }
         }
     }

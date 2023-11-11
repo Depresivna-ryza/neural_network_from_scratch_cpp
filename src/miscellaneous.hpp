@@ -30,12 +30,23 @@ void debug(std::string func_name, int line, std::vector<T> vec) {
     std::cout << "'\n";
 }
 
-double random_gaussian() {
-    // std::normal_distribution<double> d(0, 1);
-    // std::random_device rd;
-    // std::mt19937 gen(rd());
-    // return d(gen);
-    return (double)rand() / RAND_MAX / 100;
+template <typename T>
+void debug(std::string func_name, int line, std::vector<std::vector<T>> vec) {
+    std::cout << "[Debug] function: '" << func_name << "' line: '" << line << "' message: '";
+    for (auto& m : vec) {
+        for (auto& n : m) {
+            std::cout << n << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "'\n";
+}
+
+double normal_he(double n) {
+    std::normal_distribution<double> d(0, 2/n);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    return d(gen);
 
 }
 
