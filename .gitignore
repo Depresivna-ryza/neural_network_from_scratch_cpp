@@ -1,4 +1,6 @@
 # Build
+network
+output/
 *build*/*
 *.idea*/*
 

@@ -9,6 +9,9 @@
 using namespace std;
 
 struct NeuralNetwork {
+    double weight_decay;
+    double momentum_factor;
+
     vector<size_t> topology;
     vector<vector<double>> weights;
     vector<vector<double>> biases;
@@ -20,7 +23,7 @@ struct NeuralNetwork {
     vector<vector<double>> bias_gradients;     // derivative of error with respect to bias
 
    public:
-    NeuralNetwork(vector<size_t> t) : topology{t} {
+    NeuralNetwork(vector<size_t> t, double wd = 0, double mf = 0) : weight_decay{wd}, momentum_factor{mf}, topology{t} {
         // randomly initialize weights and biases
         for (size_t layer = 0; layer < topology.size() - 1; layer++) {
             vector<double> layer_weights;
@@ -117,6 +120,9 @@ struct NeuralNetwork {
                 }
             }
         }
+
+        // Apply softmax to the output layer
+        neuron_values.back() = softmax(neuron_values.back());
     }
 
     void back_propagate(const vector<double>& target) {
@@ -187,10 +193,25 @@ struct NeuralNetwork {
             fill(layer_gradients.begin(), layer_gradients.end(), 0.0);
         }
     }
+    void reset_weight_gradients_momentum() {
+        for (auto& layer_gradients : weight_gradients) {
+            for (auto& gradient : layer_gradients) {
+                gradient *= 1 - momentum_factor;
+            }
+        }
+    }
 
     void reset_bias_gradients() {
         for (auto& layer_gradients : bias_gradients) {
             fill(layer_gradients.begin(), layer_gradients.end(), 0.0);
+        }
+    }
+
+    void reset_bias_gradients_momentum() {
+        for (auto& layer_gradients : bias_gradients) {
+            for (auto& gradient : layer_gradients) {
+                gradient *= 1 - momentum_factor;
+            }
         }
     }
 
@@ -243,6 +264,7 @@ struct NeuralNetwork {
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
                 for (size_t j = 0; j < topology[layer + 1]; ++j) {
+                    weights[layer][i * topology[layer + 1] + j] *= (1 - weight_decay);
                     // Update each weight by subtracting the learning rate multiplied by the accumulated gradient
                     weights[layer][i * topology[layer + 1] + j] -=
                         learning_rate * weight_gradients[layer][i * topology[layer + 1] + j];
@@ -254,6 +276,7 @@ struct NeuralNetwork {
     void update_biases(double learning_rate) {
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
             for (size_t i = 0; i < topology[layer + 1]; ++i) {
+                biases[layer][i] *= (1 - weight_decay);
                 // Update each bias by subtracting the learning rate multiplied by the accumulated gradient
                 biases[layer][i] -= learning_rate * bias_gradients[layer][i];
             }

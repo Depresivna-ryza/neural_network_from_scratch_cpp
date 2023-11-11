@@ -1,3 +1,4 @@
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -11,30 +12,41 @@
 using namespace std;
 
 int main() {
-    // Read the data
-    auto train_vectors = read_csv("../../data/fashion_mnist_train_vectors.csv");
-    auto train_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_train_labels.csv"));
-
-    normalize_data(train_vectors, 0, 255);
-
-    auto test_vectors = read_csv("../../data/fashion_mnist_test_vectors.csv");
-    auto test_labels = label_to_one_hot_vector(read_csv("../../data/fashion_mnist_test_labels.csv"));
+    // Hyperparameters
+    int epochs = 1000;                        // Number of epochs
+    size_t batch_size = 100;                  // Batch size
+    double learning_rate = 0.0002;            // Learning rate
+    double momentum = 0.0001;                   // Momentum
+    double weight_decay = 0.0001;             // Weight decay
+    vector<size_t> hidden_layers = {20};  // Topology of the network
+    size_t time_limit = 60 * 5;
 
     // XOR data
     // auto [input_vector, output_labels] = create_xor(10);
-    // auto[train_vectors, train_labels, test_vectors, test_labels] = split_to_train_and_test(input_vector, output_labels, 1);
+    // auto [train_vectors, train_labels, test_vectors, test_labels] = split_to_train_and_test(input_vector,
+    // output_labels, 1);
+
+    // Read the data
+    auto data_vector = read_csv("data/fashion_mnist_train_vectors.csv");
+    auto data_labels = label_to_one_hot_vector(read_csv("data/fashion_mnist_train_labels.csv"));
+
+    normalize_data(data_vector, 0, 255);
+
+    auto [train_vectors, train_labels, test_vectors, test_labels] =
+        split_to_train_and_test(data_vector, data_labels, 0.8);
 
     // Create the neural network
     size_t input_size = train_vectors[0].size();
     size_t output_size = train_labels[0].size();
 
-    vector<size_t> topology = {input_size, 20, 20, output_size};
-    NeuralNetwork nn(topology);
+    vector<size_t> topology = {input_size};
+    topology.insert(topology.end(), hidden_layers.begin(), hidden_layers.end());
+    topology.push_back(output_size);
 
-    // Train the network
-    int epochs = 1000;               // Number of epochs
-    size_t batch_size = 100;         // Batch size
-    double learning_rate = 0.0004;     // Learning rate
+    NeuralNetwork nn(topology, momentum, weight_decay);
+
+    NeuralNetwork best_nn(nn);
+    double best_score = 0;
 
     // Random engine for shuffling
     random_device rd;
@@ -42,8 +54,12 @@ int main() {
 
     test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(0));
 
-    for (int epoch = 0; epoch < epochs; ++epoch) {
-        cout << "Epoch " << (epoch + 1) << "/" << epochs << endl;
+    auto const end =std::chrono::system_clock::now() + std::chrono::seconds(time_limit);
+
+    for (int epoch = 0; epoch < epochs && std::chrono::system_clock::now() < end; ++epoch) {
+        cout << "Epoch " << (epoch + 1) << "/" << epochs << " ("
+             << (std::chrono::duration_cast<std::chrono::seconds>(end - std::chrono::system_clock::now()).count())
+             << " seconds left)" << endl;
 
         // Shuffle the data at the beginning of each epoch
         vector<size_t> indices(train_vectors.size());
@@ -60,19 +76,35 @@ int main() {
                 batch_vectors.push_back(train_vectors[indices[i]]);
                 batch_labels.push_back(train_labels[indices[i]]);
             }
-
             // Run training epoch on the current batch
-
             nn.epoch(batch_vectors, batch_labels, learning_rate);
-            // string out_file = "output" + to_string(epoch) + ".txt";
-            // vector_to_file(nn.neuron_values.back(), out_file);
         }
 
         // Test the network
-        test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(epoch + 1));
+        double accuracy =
+            test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(epoch + 1));
+        if (accuracy > best_score) {
+            best_score = accuracy;
+            best_nn = nn;
+        }
     }
 
+    nn = best_nn;
+
     cout << "Training complete." << endl;
+
+    // Run the network on the test data
+
+    auto validate_vectors = read_csv("data/fashion_mnist_test_vectors.csv");
+    normalize_data(validate_vectors, 0, 255);
+
+    auto predicted_validate = nn.predict(validate_vectors);
+    vector<double> predicted_validate_labels;
+    for (auto& vec : predicted_validate) {
+        predicted_validate_labels.push_back(argmax(vec));
+    }
+
+    vector_to_file(predicted_validate_labels, "predicted_validate.csv");
 
     return 0;
 }

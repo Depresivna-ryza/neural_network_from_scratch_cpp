@@ -113,7 +113,7 @@ void vector_to_file(const vector<vector<double>>& vec, const string& filename) {
 void normalize_data(vector<vector<double>>& data, double min, double max) {
     for (size_t i = 0; i < data.size(); ++i) {
         for (size_t j = 0; j < data[i].size(); ++j) {
-            data[i][j] = (data[i][j] - min) / (max - min);
+            data[i][j] = (data[i][j] - min) / (max - min) - 0.5;
         }
     }
 }
@@ -174,7 +174,7 @@ auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<d
     return std::make_tuple(train_vectors, train_labels, test_vectors, test_labels);
 }
 
-void test_network(auto nn, auto test_vectors, auto test_labels, auto train_vectors, auto train_labels, auto label) {
+double test_network(auto nn, auto test_vectors, auto test_labels, auto train_vectors, auto train_labels, auto label) {
     auto predicted_test = nn.predict(test_vectors);
     auto predicted_train = nn.predict(train_vectors);
 
@@ -196,7 +196,9 @@ void test_network(auto nn, auto test_vectors, auto test_labels, auto train_vecto
     cout << "Test accuracy: " << (static_cast<double>(correct_test) / test_vectors.size()) * 100 << "% ";
     cout << "Train accuracy: " << (static_cast<double>(correct_train) / train_vectors.size()) * 100 << "%" << endl;
 
-    vector_to_file(predicted_test, "predicted_test_" + label + ".csv");
+    vector_to_file(predicted_test, "output/predicted_test_" + label + ".csv");
+
+    return static_cast<double>(correct_test) / test_vectors.size();
 }
 
 

@@ -94,12 +94,12 @@ struct Tensor {
 
     std::string to_string() const { return "Tensor{" + to_string_recursive(0, 0) + "}"; }
 
-    std::string to_string_recursive(int dim, int index) const {
+    std::string to_string_recursive(size_t dim, int index) const {
         if (dim == shape.size()) {
             return std::to_string(data[index]);
         }
         std::string result = "[";
-        for (int i = 0; i < shape[dim]; ++i) {
+        for (size_t i = 0; i < shape[dim]; ++i) {
             if (i != 0) {
                 result += ", ";
             }
@@ -118,7 +118,7 @@ struct Tensor {
    private:
     size_t get_index(std::vector<size_t> index) const {
         size_t result = 0;
-        for (int i = 0; i < shape.size(); ++i) {
+        for (size_t i = 0; i < shape.size(); ++i) {
             result += index[i];
             if (i < shape.size() - 1) {
                 result *= shape[i + 1];
