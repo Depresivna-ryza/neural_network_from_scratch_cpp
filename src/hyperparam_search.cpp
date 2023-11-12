@@ -101,23 +101,25 @@ int main() {
         << "accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout"
         << endl;
 
-    vector<thread> threads;
-    size_t num_threads = 2;
+    while (true) {
+        vector<thread> threads;
+        size_t num_threads = 2;
 
-    for (size_t i = 0; i < num_threads; ++i) {
-        auto n_batch_size = sample_hyperparameter(h_batch_size);
-        auto n_learning_rate = sample_hyperparameter(h_learning_rate);
-        auto n_momentum = sample_hyperparameter(h_momentum);
-        auto n_weight_decay = sample_hyperparameter(h_weight_decay);
-        auto n_hidden_layer_1 = sample_hyperparameter(h_hidden_layer_1);
-        auto n_hidden_layer_2 = sample_hyperparameter(h_hidden_layer_2);
+        for (size_t i = 0; i < num_threads; ++i) {
+            auto n_batch_size = sample_hyperparameter(h_batch_size);
+            auto n_learning_rate = sample_hyperparameter(h_learning_rate);
+            auto n_momentum = sample_hyperparameter(h_momentum);
+            auto n_weight_decay = sample_hyperparameter(h_weight_decay);
+            auto n_hidden_layer_1 = sample_hyperparameter(h_hidden_layer_1);
+            auto n_hidden_layer_2 = sample_hyperparameter(h_hidden_layer_2);
 
-        threads.emplace_back(run_experiment, epochs, n_batch_size, n_learning_rate, n_momentum, n_weight_decay,
-                             n_hidden_layer_1, n_hidden_layer_2, use_dropout, time_limit, ref(out_file));
-    }
+            threads.emplace_back(run_experiment, epochs, n_batch_size, n_learning_rate, n_momentum, n_weight_decay,
+                                 n_hidden_layer_1, n_hidden_layer_2, use_dropout, time_limit, ref(out_file));
+        }
 
-    for (auto& t : threads) {
-        t.join();
+        for (auto& t : threads) {
+            t.join();
+        }
     }
 
     return 0;
