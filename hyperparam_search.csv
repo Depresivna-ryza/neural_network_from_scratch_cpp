@@ -1,3 +1,11 @@
 accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout
 0.716333,1000,164,0.000475,0,0.000115763,120,23,0
 0.747833,1000,227,0.000775664,0,0.000121551,100,12,0
+accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout
+accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout
+accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout
+0.77775,1000,142,0.000814447,0,0,120,10,0
+accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout
+accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout
+0.690833,1000,120,0.00033171,0,0,45,15,0
+0.753,1000,238,0.000607753,0,0,68,17,0
