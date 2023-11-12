@@ -14,12 +14,13 @@ using namespace std;
 int main() {
     // Hyperparameters
     int epochs = 1000;                        // Number of epochs
-    size_t batch_size = 100;                  // Batch size
-    double learning_rate = 0.0002;            // Learning rate
-    double momentum = 0.0001;                   // Momentum
+    size_t batch_size = 150;                  // Batch size
+    double learning_rate = 0.0005;            // Learning rate
+    double momentum = 0.00;                 // Momentum
     double weight_decay = 0.0001;             // Weight decay
-    vector<size_t> hidden_layers = {20};  // Topology of the network
-    size_t time_limit = 60 * 5;
+    vector<size_t> hidden_layers = {80, 20};  // Topology of the network
+    bool use_dropout = false;                 // Use dropout
+    size_t time_limit = 60 * 10;
 
     // XOR data
     // auto [input_vector, output_labels] = create_xor(10);
@@ -43,7 +44,7 @@ int main() {
     topology.insert(topology.end(), hidden_layers.begin(), hidden_layers.end());
     topology.push_back(output_size);
 
-    NeuralNetwork nn(topology, momentum, weight_decay);
+    NeuralNetwork nn(topology, momentum, weight_decay, use_dropout);
 
     NeuralNetwork best_nn(nn);
     double best_score = 0;

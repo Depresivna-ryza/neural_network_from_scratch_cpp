@@ -11,6 +11,7 @@ using namespace std;
 struct NeuralNetwork {
     double weight_decay;
     double momentum_factor;
+    bool use_dropout;
 
     vector<size_t> topology;
     vector<vector<double>> weights;
@@ -21,9 +22,11 @@ struct NeuralNetwork {
     vector<vector<double>> neuron_gradients;   // derivative of error with respect to neuron output
     vector<vector<double>> weight_gradients;   // derivative of error with respect to weight
     vector<vector<double>> bias_gradients;     // derivative of error with respect to bias
+    vector<vector<char>> dropouts;             // dropout masks
 
    public:
-    NeuralNetwork(vector<size_t> t, double wd = 0, double mf = 0) : weight_decay{wd}, momentum_factor{mf}, topology{t} {
+    NeuralNetwork(vector<size_t> t, double wd = 0, double mf = 0, bool d = false)
+        : weight_decay{wd}, momentum_factor{mf}, use_dropout{d}, topology{t} {
         // randomly initialize weights and biases
         for (size_t layer = 0; layer < topology.size() - 1; layer++) {
             vector<double> layer_weights;
@@ -79,6 +82,14 @@ struct NeuralNetwork {
             vector<double> layer_gradients(topology[layer + 1], 0.0);
             bias_gradients.push_back(layer_gradients);
         }
+
+        // Initialize dropout masks
+        if (use_dropout) {
+            for (size_t layer = 0; layer < topology.size() - 1; layer++) {
+                vector<char> layer_dropouts(topology[layer + 1], 0);
+                dropouts.push_back(layer_dropouts);
+            }
+        }
     }
 
     double relu(double x) { return x > 0 ? x : 0; }
@@ -100,18 +111,27 @@ struct NeuralNetwork {
         return result;
     }
 
-    void feed_forward(const vector<double>& input) {
+    void feed_forward(const vector<double>& input, bool inference = false) {
         assert(input.size() == topology[0]);
         neuron_values[0] = input;
 
         for (size_t layer = 1; layer < topology.size(); ++layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
+                if (use_dropout && dropouts[layer - 1][i] && layer != topology.size() - 1 && !inference) {
+                    neuron_values[layer][i] = 0;
+                    continue;
+                }
+
                 double sum = 0;
                 for (size_t j = 0; j < topology[layer - 1]; ++j) {
                     sum += neuron_values[layer - 1][j] * weights[layer - 1][j * topology[layer] + i];
                 }
                 sum += biases[layer - 1][i];
                 neuron_potentials[layer][i] = sum;
+
+                if (use_dropout && inference) {
+                    sum *= 0.5;
+                }
 
                 if (layer == topology.size() - 1)
                     neuron_values[layer][i] = sum;  // Linear activation for the output layer
@@ -136,6 +156,11 @@ struct NeuralNetwork {
         // Backpropagation for hidden layers
         for (size_t layer = topology.size() - 2; layer > 0; --layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
+                if ( use_dropout && dropouts[layer - 1][i] ) {
+                    neuron_gradients[layer][i] = 0;
+                    continue;
+                }
+
                 double gradient_sum = 0;
                 for (size_t j = 0; j < topology[layer + 1]; ++j) {
                     if (layer == topology.size() - 2)
@@ -196,7 +221,7 @@ struct NeuralNetwork {
     void reset_weight_gradients_momentum() {
         for (auto& layer_gradients : weight_gradients) {
             for (auto& gradient : layer_gradients) {
-                gradient *= 1 - momentum_factor;
+                gradient *= momentum_factor;
             }
         }
     }
@@ -210,7 +235,15 @@ struct NeuralNetwork {
     void reset_bias_gradients_momentum() {
         for (auto& layer_gradients : bias_gradients) {
             for (auto& gradient : layer_gradients) {
-                gradient *= 1 - momentum_factor;
+                gradient *= momentum_factor;
+            }
+        }
+    }
+
+    void randomize_dropout() {
+        for (auto& layer_dropouts : dropouts) {
+            for (auto& dropout : layer_dropouts) {
+                dropout = rand() % 2;
             }
         }
     }
@@ -221,8 +254,11 @@ struct NeuralNetwork {
         double total_error = 0;
 
         // Reset weight gradients to zero at the start of each epoch
-        reset_weight_gradients();
-        reset_bias_gradients();
+        reset_weight_gradients_momentum();
+        reset_bias_gradients_momentum();
+        if (use_dropout) {
+            randomize_dropout();
+        }
 
         // Iterate over each input-target pair
         for (size_t i = 0; i < inputs.size(); ++i) {
@@ -284,7 +320,7 @@ struct NeuralNetwork {
     }
 
     vector<double> predict(const vector<double>& input) {
-        feed_forward(input);
+        feed_forward(input, true);
         return neuron_values.back();
     }
 
