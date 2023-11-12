@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # add_subdirectory(src)
 
 add_executable(neural_network src/main.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp)
+add_executable(hyperparam_search src/hyperparam_search.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp)
 
 # target_link_libraries(neural_network <library_name>)
 
