@@ -407,7 +407,6 @@ double run_network(int epochs = 1000,                        // Number of epochs
             best_score = accuracy;
             best_nn = nn;
         }
-        DEBUG(best_score);
     }
 
     nn = best_nn;
@@ -426,8 +425,6 @@ double run_network(int epochs = 1000,                        // Number of epochs
     }
 
     vector_to_file(predicted_validate_labels, "predicted_validate.csv");
-
-    DEBUG(best_score);
 
     return best_score;
 }

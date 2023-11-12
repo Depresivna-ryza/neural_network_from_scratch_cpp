@@ -11,6 +11,8 @@
 #include "neuralnetwork.hpp"
 #include "tensor.hpp"
 
+mutex mtx;
+
 using namespace std;
 
 template <typename T>
@@ -62,6 +64,18 @@ void output_hyperarameters(double accuracy, int epochs, size_t batch_size, doubl
               << weight_decay << "," << h1 << "," << h2 << "," << use_dropout << endl;
 }
 
+void run_experiment(int epochs, size_t batch_size, double learning_rate, double momentum, double weight_decay,
+                    size_t h1, size_t h2, bool use_dropout, size_t time_limit, ofstream& out_file) {
+    double accuracy =
+        run_network(epochs, batch_size, learning_rate, momentum, weight_decay, {h1, h2}, use_dropout, time_limit);
+
+    // Synchronize access to the output file
+    lock_guard<mutex> lock(mtx);
+    output_hyperarameters(accuracy, epochs, batch_size, learning_rate, momentum, weight_decay, h1, h2, use_dropout,
+                          &out_file);
+    
+}
+
 int main() {
     // default hyperparameters
     int epochs = 1000;              // Number of epochs
@@ -83,11 +97,14 @@ int main() {
 
     auto out_file = ofstream("hyperparam_search.csv", ios::app);
     // write header
-    *&out_file
+    out_file
         << "accuracy,epochs,batch_size,learning_rate,momentum,weight_decay,hidden_layer_1,hidden_layer_2,use_dropout"
         << endl;
 
-    while (true) {
+    vector<thread> threads;
+    size_t num_threads = 2;
+
+    for (size_t i = 0; i < num_threads; ++i) {
         auto n_batch_size = sample_hyperparameter(h_batch_size);
         auto n_learning_rate = sample_hyperparameter(h_learning_rate);
         auto n_momentum = sample_hyperparameter(h_momentum);
@@ -95,13 +112,12 @@ int main() {
         auto n_hidden_layer_1 = sample_hyperparameter(h_hidden_layer_1);
         auto n_hidden_layer_2 = sample_hyperparameter(h_hidden_layer_2);
 
-        double accuracy = run_network(epochs, n_batch_size, n_learning_rate, n_momentum, n_weight_decay,
-                                      {n_hidden_layer_1, n_hidden_layer_2}, use_dropout, time_limit);
+        threads.emplace_back(run_experiment, epochs, n_batch_size, n_learning_rate, n_momentum, n_weight_decay,
+                             n_hidden_layer_1, n_hidden_layer_2, use_dropout, time_limit, ref(out_file));
+    }
 
-        DEBUG(accuracy);
-
-        output_hyperarameters(accuracy, epochs, n_batch_size, n_learning_rate, n_momentum, n_weight_decay,
-                              n_hidden_layer_1, n_hidden_layer_2, use_dropout, &out_file);
+    for (auto& t : threads) {
+        t.join();
     }
 
     return 0;
