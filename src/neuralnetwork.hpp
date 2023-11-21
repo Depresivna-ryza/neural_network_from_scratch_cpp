@@ -2,9 +2,10 @@
 #define NEURALNETWORK_H
 
 #include <cassert>
-#include <vector>
 #include <chrono>
+#include <vector>
 
+#include "matrix.hpp"
 #include "miscellaneous.hpp"
 
 using namespace std;
@@ -12,84 +13,48 @@ using namespace std;
 struct NeuralNetwork {
     double weight_decay;
     double momentum_factor;
-    bool use_dropout;
 
     vector<size_t> topology;
-    vector<vector<double>> weights;
-    vector<vector<double>> biases;
+    vector<Matrix> weights;
+    vector<Matrix> biases;
 
-    vector<vector<double>> neuron_values;      // neuron outputs
-    vector<vector<double>> neuron_potentials;  // neuron potentials
-    vector<vector<double>> neuron_gradients;   // derivative of error with respect to neuron output
-    vector<vector<double>> weight_gradients;   // derivative of error with respect to weight
-    vector<vector<double>> bias_gradients;     // derivative of error with respect to bias
-    vector<vector<char>> dropouts;             // dropout masks
+    vector<Matrix> neuron_values;              // neuron outputs
+    vector<Matrix> neuron_potentials;          // neuron potentials
+    vector<Matrix> neuron_gradients;           // derivative of error with respect to neuron output
+    vector<Matrix> weight_gradients;           // derivative of error with respect to weight
+    vector<Matrix> bias_gradients;             // derivative of error with respect to bias
 
    public:
     NeuralNetwork(vector<size_t> t, double wd = 0, double mf = 0, bool d = false)
-        : weight_decay{wd}, momentum_factor{mf}, use_dropout{d}, topology{t} {
+        : weight_decay{wd}, momentum_factor{mf}, topology{t} {
         // randomly initialize weights and biases
         for (size_t layer = 0; layer < topology.size() - 1; layer++) {
-            vector<double> layer_weights;
-            vector<double> layer_biases;
-            for (size_t j = 0; j < topology[layer] * topology[layer + 1]; j++) {
-                layer_weights.push_back(normal_he(topology[layer]));
-            }
-            for (size_t j = 0; j < topology[layer + 1]; j++) {
-                layer_biases.push_back(normal_he(topology[layer]));
-            }
-            weights.push_back(layer_weights);
-            biases.push_back(layer_biases);
+            weights.push_back(Matrix::normal_he_create(topology[layer + 1], topology[layer], topology[layer]));
+            biases.push_back(Matrix::normal_he_create(topology[layer + 1], 1, topology[layer]));
         }
 
         // initialize neuron values
         for (size_t layer = 0; layer < topology.size(); layer++) {
-            vector<double> layer_values;
-            for (size_t j = 0; j < topology[layer]; j++) {
-                layer_values.push_back(0);
-            }
-            neuron_values.push_back(layer_values);
+            neuron_values.push_back(Matrix::zero_create(topology[layer], 1));
         }
 
         // initialize neuron potentials
         for (size_t layer = 0; layer < topology.size(); layer++) {
-            vector<double> layer_potentials;
-            for (size_t j = 0; j < topology[layer]; j++) {
-                layer_potentials.push_back(0);
-            }
-            neuron_potentials.push_back(layer_potentials);
+            neuron_potentials.push_back(Matrix::zero_create(topology[layer], 1));
         }
 
         // initialize neuron gradients
         for (size_t layer = 0; layer < topology.size(); layer++) {
-            vector<double> layer_gradients;
-            for (size_t j = 0; j < topology[layer]; j++) {
-                layer_gradients.push_back(0);
-            }
-            neuron_gradients.push_back(layer_gradients);
+            neuron_gradients.push_back(Matrix::zero_create(topology[layer], 1));
         }
 
         // initialize weight gradients
         for (size_t layer = 0; layer < topology.size() - 1; layer++) {
-            vector<double> layer_gradients;
-            for (size_t j = 0; j < topology[layer] * topology[layer + 1]; j++) {
-                layer_gradients.push_back(0);
-            }
-            weight_gradients.push_back(layer_gradients);
+            weight_gradients.push_back(Matrix::zero_create(topology[layer + 1], topology[layer]));
         }
-
         // Initialize bias gradients
         for (size_t layer = 0; layer < topology.size() - 1; layer++) {
-            vector<double> layer_gradients(topology[layer + 1], 0.0);
-            bias_gradients.push_back(layer_gradients);
-        }
-
-        // Initialize dropout masks
-        if (use_dropout) {
-            for (size_t layer = 0; layer < topology.size() - 1; layer++) {
-                vector<char> layer_dropouts(topology[layer + 1], 0);
-                dropouts.push_back(layer_dropouts);
-            }
+            bias_gradients.push_back(Matrix::zero_create(topology[layer + 1], 1));
         }
     }
 
@@ -118,21 +83,12 @@ struct NeuralNetwork {
 
         for (size_t layer = 1; layer < topology.size(); ++layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
-                if (use_dropout && dropouts[layer - 1][i] && layer != topology.size() - 1 && !inference) {
-                    neuron_values[layer][i] = 0;
-                    continue;
-                }
-
                 double sum = 0;
                 for (size_t j = 0; j < topology[layer - 1]; ++j) {
                     sum += neuron_values[layer - 1][j] * weights[layer - 1][j * topology[layer] + i];
                 }
                 sum += biases[layer - 1][i];
                 neuron_potentials[layer][i] = sum;
-
-                if (use_dropout && inference) {
-                    sum *= 0.5;
-                }
 
                 if (layer == topology.size() - 1)
                     neuron_values[layer][i] = sum;  // Linear activation for the output layer
@@ -157,10 +113,6 @@ struct NeuralNetwork {
         // Backpropagation for hidden layers
         for (size_t layer = topology.size() - 2; layer > 0; --layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
-                if ( use_dropout && dropouts[layer - 1][i] ) {
-                    neuron_gradients[layer][i] = 0;
-                    continue;
-                }
 
                 double gradient_sum = 0;
                 for (size_t j = 0; j < topology[layer + 1]; ++j) {
@@ -241,14 +193,6 @@ struct NeuralNetwork {
         }
     }
 
-    void randomize_dropout() {
-        for (auto& layer_dropouts : dropouts) {
-            for (auto& dropout : layer_dropouts) {
-                dropout = rand() % 2;
-            }
-        }
-    }
-
     void epoch(const vector<vector<double>>& inputs, const vector<vector<double>>& targets, double learning_rate) {
         assert(inputs.size() == targets.size());
 
@@ -257,9 +201,6 @@ struct NeuralNetwork {
         // Reset weight gradients to zero at the start of each epoch
         reset_weight_gradients_momentum();
         reset_bias_gradients_momentum();
-        if (use_dropout) {
-            randomize_dropout();
-        }
 
         // Iterate over each input-target pair
         for (size_t i = 0; i < inputs.size(); ++i) {
@@ -354,7 +295,6 @@ double run_network(int epochs = 1000,                        // Number of epochs
                    double momentum = 0.0000773781,                   // Momentum
                    double weight_decay = 0.000121,             // Weight decay
                    vector<size_t> hidden_layers = {48, 19},  // Topology of the network
-                   bool use_dropout = false,                 // Use dropout
                    size_t time_limit = 60 * 10 - 30,              // Time limit in seconds
                    bool verbose = true) {
     // Read the data
@@ -374,7 +314,7 @@ double run_network(int epochs = 1000,                        // Number of epochs
     topology.insert(topology.end(), hidden_layers.begin(), hidden_layers.end());
     topology.push_back(output_size);
 
-    NeuralNetwork nn(topology, momentum, weight_decay, use_dropout);
+    NeuralNetwork nn(topology, momentum, weight_decay);
 
     NeuralNetwork best_nn(nn);
     double best_score = 0;
