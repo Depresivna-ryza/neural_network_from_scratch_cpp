@@ -281,12 +281,12 @@ struct NeuralNetwork {
 };
 
 double run_network(int epochs = 1000,                        // Number of epochs
-                   size_t batch_size = 198,                  // Batch size
-                   double learning_rate = 0.000578,          // Learning rate
-                   double momentum = 0.0000773781,           // Momentum
-                   double weight_decay = 0.000121,           // Weight decay
-                   vector<size_t> hidden_layers = {48, 19},  // Topology of the network
-                   size_t time_limit = 60 * 10 - 50,         // Time limit in seconds
+                   size_t batch_size = 150,                  // Batch size
+                   double learning_rate = 0.0005,            // Learning rate
+                   double momentum = 0.00007,                   // Momentum
+                   double weight_decay = 0.00015,             // Weight decay
+                   vector<size_t> hidden_layers = {80, 20},  // Topology of the network
+                   size_t time_limit = 60 * 10 - 30,              // Time limit in seconds
                    bool verbose = true) {
     // Read the data
     auto data_vector = read_csv("data/fashion_mnist_train_vectors.csv");
