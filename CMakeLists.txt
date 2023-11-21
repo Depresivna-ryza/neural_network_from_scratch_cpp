@@ -9,8 +9,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # add_subdirectory(src)
 
-add_executable(neural_network src/main.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp)
-add_executable(hyperparam_search src/hyperparam_search.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp)
+set(SOURCES src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp src/matrix.hpp src/function.hpp)
+
+
+add_executable(neural_network src/main.cpp ${SOURCES} )
+add_executable(hyperparam_search src/hyperparam_search.cpp ${SOURCES} )
 
 # target_link_libraries(neural_network <library_name>)
 
@@ -32,5 +35,5 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(tests src/tests.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp)
+add_executable(tests src/tests.cpp ${SOURCES})
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)

@@ -1,13 +1,21 @@
 #ifndef FUNCTION_H
 #define FUNCTION_H
 
+#include "matrix.hpp"
+
 struct Function {
     Function();
     double operator()(double x);
 };
 
 struct Sigmoid : public Function {
-    double operator()(double x);
+    static double evaluate(double x) {
+        return 1 / (1 + exp(-x));
+    }
+
+    static double derivative(double x) {
+        return evaluate(x) * (1 - evaluate(x));
+    }
 };
 
 struct ReLU : public Function {
