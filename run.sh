@@ -1,7 +1,4 @@
 #!/bin/bash
-## change this file to your needs
-
-echo "Adding some modules"
 
 # module add gcc-10.2
 
@@ -11,7 +8,7 @@ echo "    COMPILING    "
 echo "#################"
 
 ## dont forget to use comiler optimizations (e.g. -O3 or -Ofast)
-g++ -Wall -std=c++20 -O3 src/main.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp -o network
+g++ -Wall -std=c++20 -O3 -fopenmp src/main.cpp src/miscellaneous.hpp src/neuralnetwork.hpp src/matrix.hpp -o network
 
 echo "#################"
 echo "     RUNNING     "

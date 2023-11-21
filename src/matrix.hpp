@@ -13,6 +13,8 @@ struct Matrix {
     std::vector<double> data;
 
     Matrix(size_t r, size_t c) : rows(r), cols(c) { data.resize(rows * cols); }
+    Matrix(size_t r, size_t c, std::vector<double> d) : rows(r), cols(c), data(d) { assert(d.size() == rows * cols); }
+    Matrix(std::vector<double> d) : rows(d.size()), cols(1), data(d) {}
     Matrix() = delete;
 
     auto get_shape() const { return std::make_tuple(rows, cols); }
@@ -23,11 +25,22 @@ struct Matrix {
     }
     std::vector<double> get_data() const { return data; }
 
-    double get(size_t row, size_t col) const { return data[row * cols + col]; }
+    double get(size_t row, size_t col) const {
+        assert(row < rows && col < cols);
+        return data[row * cols + col];
+    }
+    double& get(size_t row, size_t col) {
+        assert(row < rows && col < cols);
+        return data[row * cols + col];
+    }
 
-    void set(size_t row, size_t col, double value) { data[row * cols + col] = value; }
+    void set(size_t row, size_t col, double value) {
+        assert(row < rows && col < cols);
+        data[row * cols + col] = value;
+    }
+    size_t size() const { return data.size(); }
 
-    void transpose() {
+    Matrix& transpose() {
         std::swap(rows, cols);
         std::vector<double> new_data(data.size());
         for (size_t i = 0; i < rows; ++i) {
@@ -36,11 +49,12 @@ struct Matrix {
             }
         }
         data = new_data;
+        return *this;
     }
 
     static Matrix zero_create(size_t r, size_t c) {
         Matrix result(r, c);
-        result.zero_fill();
+        result.clear();
         return result;
     }
 
@@ -52,7 +66,7 @@ struct Matrix {
         }
         return result;
     }
-    void zero_fill() {
+    void clear() {
         for (size_t i = 0; i < data.size(); ++i) {
             data[i] = 0;
         }
@@ -69,6 +83,7 @@ struct Matrix {
         result += other;
         return result;
     }
+
     Matrix& operator+=(const Matrix& other) {
         assert(rows == other.rows && cols == other.cols);
         for (size_t i = 0; i < data.size(); ++i) {

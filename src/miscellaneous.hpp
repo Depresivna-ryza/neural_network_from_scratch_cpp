@@ -174,8 +174,9 @@ auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<d
     return std::make_tuple(train_vectors, train_labels, test_vectors, test_labels);
 }
 
-double test_network(auto nn, auto test_vectors, auto test_labels, auto train_vectors, auto train_labels, auto label,
-                    bool verbose = true) {
+double test_network(auto& nn, vector<vector<double>> test_vectors, vector<vector<double>> test_labels,
+                    vector<vector<double>> train_vectors, vector<vector<double>> train_labels,
+                    std::string label, bool verbose = true) {
     auto predicted_test = nn.inference(test_vectors);
     auto predicted_train = nn.inference(train_vectors);
 

@@ -7,13 +7,18 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 # add_subdirectory(src)
 
-set(SOURCES src/miscellaneous.hpp src/neuralnetwork.hpp src/tensor.hpp src/matrix.hpp src/function.hpp)
-
+set(SOURCES src/miscellaneous.hpp src/neuralnetwork.hpp src/matrix.hpp src/function.hpp)
 
 add_executable(neural_network src/main.cpp ${SOURCES} )
 add_executable(hyperparam_search src/hyperparam_search.cpp ${SOURCES} )
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(neural_network PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 # target_link_libraries(neural_network <library_name>)
 

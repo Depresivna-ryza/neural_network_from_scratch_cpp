@@ -9,7 +9,6 @@
 
 #include "miscellaneous.hpp"
 #include "neuralnetwork.hpp"
-#include "tensor.hpp"
 
 mutex mtx;
 
