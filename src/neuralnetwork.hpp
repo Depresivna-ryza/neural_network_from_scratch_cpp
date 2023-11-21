@@ -320,29 +320,42 @@ struct NeuralNetwork {
         }
     }
 
-    vector<double> predict(const vector<double>& input) {
+    vector<double> inference(const vector<double>& input) {
         feed_forward(input, true);
         return neuron_values.back();
     }
 
-    auto predict(const vector<vector<double>>& input) {
+    auto inference(const vector<vector<double>>& input) {
         vector<vector<double>> predicted_labels;
         for (size_t i = 0; i < input.size(); ++i) {
-            auto pred = predict(input[i]);
+            auto pred = inference(input[i]);
             predicted_labels.push_back(pred);
         }
         return predicted_labels;
     }
+
+    void inference_and_output(string input_file, string output_file) {
+        auto validate_vectors = read_csv(input_file);
+        normalize_data(validate_vectors, 0, 255);
+
+        auto predicted_validate = inference(validate_vectors);
+        vector<double> predicted_validate_labels;
+        for (auto& vec : predicted_validate) {
+            predicted_validate_labels.push_back(argmax(vec));
+        }
+
+        vector_to_file(predicted_validate_labels, output_file);
+    }
 };
 
 double run_network(int epochs = 1000,                        // Number of epochs
-                   size_t batch_size = 150,                  // Batch size
-                   double learning_rate = 0.0005,            // Learning rate
-                   double momentum = 0.0001,                   // Momentum
-                   double weight_decay = 0.0001,             // Weight decay
-                   vector<size_t> hidden_layers = {80, 20},  // Topology of the network
+                   size_t batch_size = 198,                  // Batch size
+                   double learning_rate = 0.000578,            // Learning rate
+                   double momentum = 0.0000773781,                   // Momentum
+                   double weight_decay = 0.000121,             // Weight decay
+                   vector<size_t> hidden_layers = {48, 19},  // Topology of the network
                    bool use_dropout = false,                 // Use dropout
-                   size_t time_limit = 60 * 10,              // Time limit in seconds
+                   size_t time_limit = 60 * 10 - 30,              // Time limit in seconds
                    bool verbose = true) {
     // Read the data
     auto data_vector = read_csv("data/fashion_mnist_train_vectors.csv");
@@ -414,17 +427,8 @@ double run_network(int epochs = 1000,                        // Number of epochs
     cout << "Training complete." << endl;
 
     // Run the network on the test data
-
-    auto validate_vectors = read_csv("data/fashion_mnist_test_vectors.csv");
-    normalize_data(validate_vectors, 0, 255);
-
-    auto predicted_validate = nn.predict(validate_vectors);
-    vector<double> predicted_validate_labels;
-    for (auto& vec : predicted_validate) {
-        predicted_validate_labels.push_back(argmax(vec));
-    }
-
-    vector_to_file(predicted_validate_labels, "predicted_validate.csv");
+    nn.inference_and_output("data/fashion_mnist_test_vectors.csv", "data/test_predictions.csv");
+    nn.inference_and_output("data/fashion_mnist_train_vectors.csv", "data/train_predictions.csv");
 
     return best_score;
 }

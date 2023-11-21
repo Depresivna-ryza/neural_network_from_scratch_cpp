@@ -26,6 +26,9 @@ echo "#################"
 echo "      DONE       "
 echo "#################"
 
+echo "Test data:"
+python3 evaluator/evaluate.py data/test_predictions.csv data/fashion_mnist_test_labels.csv
+echo "Train data:"
+python3 evaluator/evaluate.py data/train_predictions.csv data/fashion_mnist_train_labels.csv
 
-python3 evaluator/evaluate.py predicted_validate.csv data/fashion_mnist_test_labels.csv      
 

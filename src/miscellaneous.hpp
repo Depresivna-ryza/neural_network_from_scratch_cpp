@@ -176,8 +176,8 @@ auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<d
 
 double test_network(auto nn, auto test_vectors, auto test_labels, auto train_vectors, auto train_labels, auto label,
                     bool verbose = true) {
-    auto predicted_test = nn.predict(test_vectors);
-    auto predicted_train = nn.predict(train_vectors);
+    auto predicted_test = nn.inference(test_vectors);
+    auto predicted_train = nn.inference(train_vectors);
 
     size_t correct_test = 0;
     size_t correct_train = 0;
