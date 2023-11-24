@@ -1,8 +1,6 @@
 #ifndef NEURALNETWORK_H
 #define NEURALNETWORK_H
 
-#include <omp.h>
-
 #include <cassert>
 #include <chrono>
 #include <vector>
@@ -193,8 +191,6 @@ struct NeuralNetwork {
         reset_bias_gradients_momentum();
 
         // Iterate over each input-target pair
-
-#pragma omp parallel for num_threads(1) reduction(+ : total_error)
         for (size_t i = 0; i < inputs.size(); ++i) {
             feed_forward(inputs[i]);
             back_propagate(targets[i]);
@@ -278,15 +274,44 @@ struct NeuralNetwork {
 
         vector_to_file(predicted_validate_labels, output_file);
     }
+
+    double test_network(vector<vector<double>> test_vectors, vector<vector<double>> test_labels,
+                        vector<vector<double>> train_vectors, vector<vector<double>> train_labels, std::string label,
+                        bool verbose = true) {
+        auto predicted_test = inference(test_vectors);
+        auto predicted_train = inference(train_vectors);
+
+        size_t correct_test = 0;
+        size_t correct_train = 0;
+
+        for (size_t i = 0; i < test_vectors.size(); ++i) {
+            if (argmax(predicted_test[i]) == argmax(test_labels[i])) {
+                ++correct_test;
+            }
+        }
+
+        for (size_t i = 0; i < train_vectors.size(); ++i) {
+            if (argmax(predicted_train[i]) == argmax(train_labels[i])) {
+                ++correct_train;
+            }
+        }
+        if (verbose) {
+            cout << "Test accuracy: " << (static_cast<double>(correct_test) / test_vectors.size()) * 100 << "% ";
+            cout << "Train accuracy: " << (static_cast<double>(correct_train) / train_vectors.size()) * 100 << "%"
+                 << endl;
+        }
+
+        return static_cast<double>(correct_test) / test_vectors.size();
+    }
 };
 
 double run_network(int epochs = 1000,                        // Number of epochs
-                   size_t batch_size = 198,                  // Batch size
-                   double learning_rate = 0.000578,            // Learning rate
-                   double momentum = 0.0000773781,                   // Momentum
-                   double weight_decay = 0.000121,             // Weight decay
+                   size_t batch_size = 200,                  // Batch size
+                   double learning_rate = 0.000578,          // Learning rate
+                   double momentum = 0.0000773781,           // Momentum
+                   double weight_decay = 0.000121,           // Weight decay
                    vector<size_t> hidden_layers = {48, 19},  // Topology of the network
-                   size_t time_limit = 60 * 10 - 30,              // Time limit in seconds
+                   size_t time_limit = 60 * 10 - 30,         // Time limit in seconds
                    bool verbose = true) {
     // Read the data
     auto data_vector = read_csv("data/fashion_mnist_train_vectors.csv");
@@ -346,7 +371,7 @@ double run_network(int epochs = 1000,                        // Number of epochs
 
         // Test the network
         double accuracy =
-            test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(epoch + 1), verbose);
+            nn.test_network(test_vectors, test_labels, train_vectors, train_labels, to_string(epoch + 1), verbose);
         if (accuracy > best_score) {
             best_score = accuracy;
             best_nn = nn;
@@ -358,8 +383,8 @@ double run_network(int epochs = 1000,                        // Number of epochs
     cout << "Training complete." << endl;
 
     // Run the network on the test data
-    nn.inference_and_output("data/fashion_mnist_test_vectors.csv", "data/test_predictions.csv");
-    nn.inference_and_output("data/fashion_mnist_train_vectors.csv", "data/train_predictions.csv");
+    nn.inference_and_output("data/fashion_mnist_test_vectors.csv", "test_predictions.csv");
+    nn.inference_and_output("data/fashion_mnist_train_vectors.csv", "train_predictions.csv");
 
     return best_score;
 }

@@ -174,34 +174,5 @@ auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<d
     return std::make_tuple(train_vectors, train_labels, test_vectors, test_labels);
 }
 
-double test_network(auto& nn, vector<vector<double>> test_vectors, vector<vector<double>> test_labels,
-                    vector<vector<double>> train_vectors, vector<vector<double>> train_labels,
-                    std::string label, bool verbose = true) {
-    auto predicted_test = nn.inference(test_vectors);
-    auto predicted_train = nn.inference(train_vectors);
-
-    size_t correct_test = 0;
-    size_t correct_train = 0;
-
-    for (size_t i = 0; i < test_vectors.size(); ++i) {
-        if (argmax(predicted_test[i]) == argmax(test_labels[i])) {
-            ++correct_test;
-        }
-    }
-
-    for (size_t i = 0; i < train_vectors.size(); ++i) {
-        if (argmax(predicted_train[i]) == argmax(train_labels[i])) {
-            ++correct_train;
-        }
-    }
-    if (verbose) {
-        cout << "Test accuracy: " << (static_cast<double>(correct_test) / test_vectors.size()) * 100 << "% ";
-        cout << "Train accuracy: " << (static_cast<double>(correct_train) / train_vectors.size()) * 100 << "%" << endl;
-    }
-
-    vector_to_file(predicted_test, "output/predicted_test_" + label + ".csv");
-
-    return static_cast<double>(correct_test) / test_vectors.size();
-}
 
 #endif // MISC_H

@@ -11,7 +11,6 @@
 using namespace std;
 
 int main() {
-    // Run the network
     run_network();
     return 0;
 }
