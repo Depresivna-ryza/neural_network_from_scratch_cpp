@@ -7,6 +7,13 @@
 
 #include "miscellaneous.hpp"
 
+/**
+ * @brief Class representing a matrix of doubles
+ *
+ * This class is used to represent the weights and biases of the
+ * neural network.
+ * It also supports basic matrix operations.
+ */
 struct Matrix {
     size_t rows;  // for weights: number of neurons in output layer
     size_t cols;  // for weights: number of neurons in input layer
@@ -58,7 +65,14 @@ struct Matrix {
         return result;
     }
 
-    // for initialization of a matrix of weights or biases with parameter of the size of last layer
+    /**
+     * @brief Create a matrix with random values from a normal he initialization
+     *
+     * @param r number of rows
+     * @param c number of columns
+     * @param last_layer_size number of neurons in the previous layer
+     * @return new matrix
+     */
     static Matrix normal_he_create(size_t r, size_t c, double last_layer_size) {
         Matrix result(r, c);
         for (size_t i = 0; i < result.data.size(); ++i) {

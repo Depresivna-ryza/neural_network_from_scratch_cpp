@@ -130,6 +130,11 @@ size_t argmax(const vector<double>& vec) {
     return max_index;
 }
 
+/** @brief Create a vector of vectors of size 2^n with the xor function
+ *
+ * @param dimension number of dimensions (length of the xor input)
+ * @return tuple of input vectors and output vectors
+ */
 std::tuple<vector<vector<double>>, vector<vector<double>>> create_xor(int dimension) {
     vector<vector<double>> train_vectors;
     vector<vector<double>> train_labels;

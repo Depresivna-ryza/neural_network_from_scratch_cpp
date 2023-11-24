@@ -10,6 +10,13 @@
 
 using namespace std;
 
+/**
+ * @brief Class representing a neural network.
+ *
+ * This class encapsulates the functionality of a feedforward neural network, including
+ * methods for feedforward operation, backpropagation, weight updates, and inference. It
+ * is designed for general-purpose use with configurable topology and parameters.
+ */
 struct NeuralNetwork {
     double weight_decay;
     double momentum_factor;
@@ -25,6 +32,14 @@ struct NeuralNetwork {
     vector<Matrix> bias_gradients;             // derivative of error with respect to bias
 
    public:
+    /**
+     * @brief Constructs a NeuralNetwork with given topology and optional parameters.
+     *
+     * @param t Topology of the network as a vector of layer sizes.
+     * @param wd Weight decay factor (default 0).
+     * @param mf Momentum factor (default 0).
+     * @param d Debug flag (default false, not used).
+     */
     NeuralNetwork(vector<size_t> t, double wd = 0, double mf = 0, bool d = false)
         : weight_decay{wd}, momentum_factor{mf}, topology{t} {
         // randomly initialize weights and biases
@@ -77,6 +92,12 @@ struct NeuralNetwork {
         return result;
     }
 
+    /**
+     * @brief Feeds input data forward through the network.
+     *
+     * @param input The input matrix to the network.
+     * @param inference Flag indicating whether this is an inference run (default false).
+     */
     void feed_forward(const Matrix& input, bool inference = false) {
         assert(input.size() == topology[0]);
         neuron_values[0] = input;
@@ -94,6 +115,11 @@ struct NeuralNetwork {
         }
     }
 
+    /**
+     * @brief Performs the backpropagation algorithm.
+     *
+     * @param target The target output matrix for training.
+     */
     void back_propagate(const Matrix& target) {
         assert(target.size() == topology.back());
 
@@ -118,7 +144,9 @@ struct NeuralNetwork {
             }
         }
     }
-
+    /**
+     * @brief Updates the gradients for network weights based on backpropagation.
+     */
     void update_weight_gradients() {
         // Iterate over all layers except the input layer
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
@@ -180,7 +208,13 @@ struct NeuralNetwork {
             layer_gradients *= momentum_factor;
         }
     }
-
+    /**
+     * @brief Runs an epoch of training over a batch of inputs and targets.
+     *
+     * @param inputs Vector of input matrices.
+     * @param targets Vector of target matrices.
+     * @param learning_rate The learning rate for weight updates.
+     */
     void epoch(const vector<Matrix>& inputs, const vector<Matrix>& targets, double learning_rate) {
         assert(inputs.size() == targets.size());
 
@@ -225,7 +259,11 @@ struct NeuralNetwork {
         }
         return loss / target.size();
     }
-
+    /**
+     * @brief Update weights based on weight gradients.
+     *
+     * @param learning_rate The learning rate for weight updates.
+     */
     void update_weights(double learning_rate) {
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
             for (size_t i = 0; i < topology[layer]; ++i) {
@@ -238,6 +276,11 @@ struct NeuralNetwork {
         }
     }
 
+    /**
+     * @brief Update biases based on bias gradients.
+     *
+     * @param learning_rate The learning rate for weight updates.
+     */
     void update_biases(double learning_rate) {
         for (size_t layer = 0; layer < topology.size() - 1; ++layer) {
             for (size_t i = 0; i < topology[layer + 1]; ++i) {
@@ -248,11 +291,22 @@ struct NeuralNetwork {
         }
     }
 
+    /**
+     * @brief Runs inference on a single input vector.
+     *
+     * @param input An input vector.
+     * @return Predicted output vector.
+     */
     vector<double> inference(const vector<double>& input) {
         feed_forward(Matrix{input}, true);
         return neuron_values.back().get_data();
     }
-
+    /**
+     * @brief Runs inference on a set of input vectors.
+     *
+     * @param input A vector of input vectors.
+     * @return Predicted outputs for each input.
+     */
     auto inference(const vector<vector<double>>& input) {
         vector<vector<double>> predicted_labels;
         for (size_t i = 0; i < input.size(); ++i) {
@@ -262,6 +316,13 @@ struct NeuralNetwork {
         return predicted_labels;
     }
 
+
+    /**
+     * @brief Runs inference on a set of input vectors and outputs the results to a file.
+     *
+     * @param input_file Path to the input file.
+     * @param output_file Path to the output file.
+     */
     void inference_and_output(string input_file, string output_file) {
         auto validate_vectors = read_csv(input_file);
         normalize_data(validate_vectors, 0, 255);
@@ -275,18 +336,29 @@ struct NeuralNetwork {
         vector_to_file(predicted_validate_labels, output_file);
     }
 
-    double test_network(vector<vector<double>> test_vectors, vector<vector<double>> test_labels,
+    /**
+     * @brief Tests the network on a set of input vectors.
+     *
+     * @param validation_vectors A vector of input vectors.
+     * @param validation_labels A vector of target vectors.
+     * @param train_vectors A vector of training vectors.
+     * @param train_labels A vector of training labels.
+     * @param label A label for the test run.
+     * @param verbose Flag indicating whether to print the results to stdout (default true).
+     * @return The accuracy of the network on the validation set.
+     */
+    double test_network(vector<vector<double>> validation_vectors, vector<vector<double>> validation_labels,
                         vector<vector<double>> train_vectors, vector<vector<double>> train_labels, std::string label,
                         bool verbose = true) {
-        auto predicted_test = inference(test_vectors);
+        auto predicted_test = inference(validation_vectors);
         auto predicted_train = inference(train_vectors);
 
-        size_t correct_test = 0;
+        size_t correct_validation = 0;
         size_t correct_train = 0;
 
-        for (size_t i = 0; i < test_vectors.size(); ++i) {
-            if (argmax(predicted_test[i]) == argmax(test_labels[i])) {
-                ++correct_test;
+        for (size_t i = 0; i < validation_vectors.size(); ++i) {
+            if (argmax(predicted_test[i]) == argmax(validation_labels[i])) {
+                ++correct_validation;
             }
         }
 
@@ -296,14 +368,30 @@ struct NeuralNetwork {
             }
         }
         if (verbose) {
-            cout << "Test accuracy: " << (static_cast<double>(correct_test) / test_vectors.size()) * 100 << "% ";
+            cout << "Validation accuracy: "
+                 << (static_cast<double>(correct_validation) / validation_vectors.size()) * 100 << "% ";
             cout << "Train accuracy: " << (static_cast<double>(correct_train) / train_vectors.size()) * 100 << "%"
                  << endl;
         }
 
-        return static_cast<double>(correct_test) / test_vectors.size();
+        return static_cast<double>(correct_validation) / validation_vectors.size();
     }
 };
+
+/**
+ * @brief Runs a neural network on the Fashion MNIST dataset.
+ *
+ * @param epochs Number of epochs to run 
+ * @param batch_size Batch size for SGD
+ * @param learning_rate Learning rate for weight updates 
+ * @param momentum Momentum factor for weight updates 
+ * @param weight_decay Weight decay factor for weight updates 
+ * @param hidden_layers Topology of the network 
+ * @param time_limit Time limit in seconds 
+ * @param verbose Flag indicating whether to print the results to stdout
+ * @return The accuracy of the network on the validation set.
+ */
+
 
 double run_network(int epochs = 1000,                        // Number of epochs
                    size_t batch_size = 200,                  // Batch size
@@ -319,8 +407,8 @@ double run_network(int epochs = 1000,                        // Number of epochs
 
     normalize_data(data_vector, 0, 255);
 
-    auto [train_vectors, train_labels, test_vectors, test_labels] =
-        split_to_train_and_test(data_vector, data_labels, 0.8);
+    auto [train_vectors, train_labels, validation_vectors, validation_labels] =
+        split_to_train_and_test(data_vector, data_labels, 0.85);
 
     // Create the neural network
     size_t input_size = train_vectors[0].size();
@@ -338,8 +426,6 @@ double run_network(int epochs = 1000,                        // Number of epochs
     // Random engine for shuffling the data in SGD
     random_device rd;
     default_random_engine rng(rd());
-
-    // test_network(nn, test_vectors, test_labels, train_vectors, train_labels, to_string(0), verbose);
 
     auto const end = std::chrono::system_clock::now() + std::chrono::seconds(time_limit);
 
@@ -370,8 +456,8 @@ double run_network(int epochs = 1000,                        // Number of epochs
         }
 
         // Test the network
-        double accuracy =
-            nn.test_network(test_vectors, test_labels, train_vectors, train_labels, to_string(epoch + 1), verbose);
+        double accuracy = nn.test_network(validation_vectors, validation_labels, train_vectors, train_labels,
+                                          to_string(epoch + 1), verbose);
         if (accuracy > best_score) {
             best_score = accuracy;
             best_nn = nn;
