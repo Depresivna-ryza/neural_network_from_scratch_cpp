@@ -67,7 +67,7 @@ void output_hyperarameters(double accuracy, int epochs, size_t batch_size, doubl
 void run_experiment(int epochs, size_t batch_size, double learning_rate, double momentum, double weight_decay,
                     size_t h1, size_t h2, bool use_dropout, size_t time_limit, ofstream& out_file) {
     double accuracy =
-        run_network(epochs, batch_size, learning_rate, momentum, weight_decay, {h1, h2}, use_dropout, time_limit);
+        run_network(epochs, batch_size, learning_rate, momentum, weight_decay, {h1, h2}, time_limit);
 
     // Synchronize access to the output file
     lock_guard<mutex> lock(mtx);
@@ -78,7 +78,7 @@ void run_experiment(int epochs, size_t batch_size, double learning_rate, double 
 
 int main() {
     // default hyperparameters
-    int epochs = 100;               // Number of epochs
+    int epochs = 1000;               // Number of epochs
     size_t batch_size = 200;        // Batch size
     double learning_rate = 0.0005;  // Learning rate
     double momentum = 0.00;         // Momentum
@@ -86,7 +86,7 @@ int main() {
     size_t hidden_layer_1 = 60;     // Topology of the network
     size_t hidden_layer_2 = 20;     // Topology of the network
     bool use_dropout = false;       // Use dropout
-    size_t time_limit = 10 * 60 - 30;  // Time limit in seconds
+    size_t time_limit = 500;        // Time limit in seconds
 
     auto h_batch_size = randomize_hyperarameter(batch_size);
     auto h_learning_rate = randomize_hyperarameter(learning_rate);
