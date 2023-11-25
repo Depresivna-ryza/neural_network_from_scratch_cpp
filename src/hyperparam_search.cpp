@@ -21,8 +21,9 @@ vector<T> randomize_hyperarameter(T value) {
     vector<T> result;
     result.push_back(value);
     for (int i = 0; i < 10; ++i) {
-        result.push_back(a *= 0.95);
-        result.push_back(b *= 1.05);
+        float r = 0.8;
+        result.push_back(a *= r);
+        result.push_back(b /= r);
     }
     return result;
 }
@@ -77,15 +78,15 @@ void run_experiment(int epochs, size_t batch_size, double learning_rate, double 
 
 int main() {
     // default hyperparameters
-    int epochs = 1000;              // Number of epochs
-    size_t batch_size = 150;        // Batch size
+    int epochs = 100;               // Number of epochs
+    size_t batch_size = 200;        // Batch size
     double learning_rate = 0.0005;  // Learning rate
     double momentum = 0.00;         // Momentum
-    double weight_decay = 0.0000;   // Weight decay
-    size_t hidden_layer_1 = 80;     // Topology of the network
+    double weight_decay = 0.0001;   // Weight decay
+    size_t hidden_layer_1 = 60;     // Topology of the network
     size_t hidden_layer_2 = 20;     // Topology of the network
     bool use_dropout = false;       // Use dropout
-    size_t time_limit = 1;          // Time limit in seconds
+    size_t time_limit = 10 * 60 - 30;  // Time limit in seconds
 
     auto h_batch_size = randomize_hyperarameter(batch_size);
     auto h_learning_rate = randomize_hyperarameter(learning_rate);
