@@ -103,7 +103,7 @@ int main() {
 
     while (true) {
         vector<thread> threads;
-        size_t num_threads = 2;
+        size_t num_threads = 14;
 
         for (size_t i = 0; i < num_threads; ++i) {
             auto n_batch_size = sample_hyperparameter(h_batch_size);
