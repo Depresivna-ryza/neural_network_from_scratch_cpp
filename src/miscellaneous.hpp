@@ -42,12 +42,12 @@ void debug(std::string func_name, int line, std::vector<std::vector<T>> vec) {
     std::cout << "'\n";
 }
 
-double normal_he(double n) {
-    std::normal_distribution<double> d(0, 2/n);
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    return d(gen);
+int get_seed() { return 42; }
 
+double normal_he(double n) {
+    static std::mt19937 gen(get_seed());
+    static std::normal_distribution<double> d(0, 2 / n);
+    return d(gen);
 }
 
 vector<double> parse_csv_line(const string& line) {
@@ -158,7 +158,9 @@ auto split_to_train_and_test(vector<vector<double>>& input_data, vector<vector<d
     //shuffle the data
     vector<size_t> indices(input_data.size());
     iota(indices.begin(), indices.end(), 0);
-    shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device()()));
+
+    static std::mt19937 gen(get_seed());
+    shuffle(indices.begin(), indices.end(), gen);
 
     size_t train_size = static_cast<size_t>(input_data.size() * train_ratio);
     vector<vector<double>> train_vectors;

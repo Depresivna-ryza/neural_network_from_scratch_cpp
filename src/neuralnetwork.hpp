@@ -395,7 +395,7 @@ struct NeuralNetwork {
 
 double run_network(int epochs = 1000,                        // Number of epochs
                    size_t batch_size = 200,                  // Batch size
-                   double learning_rate = 0.000578,          // Learning rate
+                   double learning_rate = 0.0014,          // Learning rate
                    double momentum = 0.0000773781,           // Momentum
                    double weight_decay = 0.000121,           // Weight decay
                    vector<size_t> hidden_layers = {48, 19},  // Topology of the network
@@ -424,8 +424,7 @@ double run_network(int epochs = 1000,                        // Number of epochs
     double best_score = 0;
 
     // Random engine for shuffling the data in SGD
-    random_device rd;
-    default_random_engine rng(rd());
+    static std::mt19937 gen(get_seed());
 
     auto const end = std::chrono::system_clock::now() + std::chrono::seconds(time_limit);
 
@@ -439,7 +438,7 @@ double run_network(int epochs = 1000,                        // Number of epochs
         // Shuffle the data at the beginning of each epoch
         vector<size_t> indices(train_vectors.size());
         iota(indices.begin(), indices.end(), 0);
-        shuffle(indices.begin(), indices.end(), rng);
+        shuffle(indices.begin(), indices.end(), gen);
 
         // Iterate over batches
         for (size_t batch_start = 0; batch_start < train_vectors.size(); batch_start += batch_size) {
@@ -461,6 +460,9 @@ double run_network(int epochs = 1000,                        // Number of epochs
         if (accuracy > best_score) {
             best_score = accuracy;
             best_nn = nn;
+        }
+        if (best_score >= 0.895) {
+            break;
         }
     }
 

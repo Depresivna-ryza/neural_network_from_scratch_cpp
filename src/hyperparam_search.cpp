@@ -21,7 +21,7 @@ vector<T> randomize_hyperarameter(T value) {
     vector<T> result;
     result.push_back(value);
     for (int i = 0; i < 10; ++i) {
-        float r = 0.8;
+        float r = 0.9;
         result.push_back(a *= r);
         result.push_back(b /= r);
     }
@@ -103,7 +103,7 @@ int main() {
 
     while (true) {
         vector<thread> threads;
-        size_t num_threads = 14;
+        size_t num_threads = 4;
 
         for (size_t i = 0; i < num_threads; ++i) {
             auto n_batch_size = sample_hyperparameter(h_batch_size);
@@ -113,8 +113,8 @@ int main() {
             auto n_hidden_layer_1 = sample_hyperparameter(h_hidden_layer_1);
             auto n_hidden_layer_2 = sample_hyperparameter(h_hidden_layer_2);
 
-            threads.emplace_back(run_experiment, epochs, n_batch_size, n_learning_rate, n_momentum, n_weight_decay,
-                                 n_hidden_layer_1, n_hidden_layer_2, use_dropout, time_limit, ref(out_file));
+            threads.emplace_back(run_experiment, epochs, batch_size, n_learning_rate, momentum, n_weight_decay,
+                                 hidden_layer_1, hidden_layer_2, use_dropout, time_limit, ref(out_file));
         }
 
         for (auto& t : threads) {
