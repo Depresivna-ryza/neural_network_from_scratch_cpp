@@ -18,6 +18,12 @@ are four data files included:
  - `fashion_mnist_train_labels.csv`    - training labels
  - `fashion_mnist_test_labels.csv`     - testing labels
 
+### FEATURES
+  - MLP forward and backpropagation using matrix multiplication
+  - Classifier softmax head
+  - Hyperparameter search
+  - Tests
+
 ### PREREQUISITES
 
 Make sure to have the following installed:
